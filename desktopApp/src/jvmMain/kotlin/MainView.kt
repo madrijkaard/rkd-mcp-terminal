@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
@@ -27,13 +28,15 @@ fun MainView() {
     val isCdCommand = inputParts.firstOrNull() == "cd"
     val cdPrefix = if (isCdCommand && inputParts.size > 1) inputParts[1] else ""
 
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(12.dp)
     ) {
-        // Mostra o diretório atual (sem o comando)
+        // Exibe o caminho atual (sem o comando digitado)
         Text(
             text = currentDir.path,
             color = Color.Green,
@@ -42,11 +45,11 @@ fun MainView() {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // Listagem com scroll
+        // Listagem de arquivos/diretórios com rolagem
         Column(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
             output.forEach { file ->
                 val fileName = file.name
@@ -75,7 +78,7 @@ fun MainView() {
             }
         }
 
-        // Campo de entrada com autocomplete e comandos
+        // Campo de entrada
         BasicTextField(
             value = inputText,
             onValueChange = { inputText = it },
@@ -94,7 +97,9 @@ fun MainView() {
                         if (isCdCommand && candidates.size == 1 && cdPrefix.length < candidates[0].name.length) {
                             inputText = "cd ${candidates[0].name}"
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     } else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                         handleCommand(
                             inputText.trim(),
@@ -109,7 +114,9 @@ fun MainView() {
                         )
                         inputText = ""
                         true
-                    } else false
+                    } else {
+                        false
+                    }
                 },
             singleLine = true
         )
@@ -117,27 +124,15 @@ fun MainView() {
 }
 
 private fun listDirectory(dir: File): List<File> {
-    val isWindows = System.getProperty("os.name").lowercase().contains("win")
-    val unwantedWindowsFiles = listOf(
-        "ntuser.dat",
-        "ntuser.dat.log1",
-        "ntuser.dat.log2",
-        "ntuser.ini"
-    )
-
     return dir.listFiles()
         ?.filter { file ->
-            val nameLower = file.name.lowercase()
-
-            val hiddenByDotOrIni = nameLower.startsWith(".") || nameLower.endsWith(".ini")
-            val hiddenByWindows = isWindows && (
-                    nameLower in unwantedWindowsFiles ||
-                            nameLower.contains("ntuser.dat{") ||
-                            nameLower.endsWith(".regtrans-ms") ||
-                            nameLower.endsWith(".blf")
-                    )
-
-            !hiddenByDotOrIni && !hiddenByWindows
+            !file.name.startsWith(".") &&
+                    !file.name.equals("NTUSER.DAT", ignoreCase = true) &&
+                    !file.name.equals("ntuser.dat.LOG1", ignoreCase = true) &&
+                    !file.name.equals("ntuser.dat.LOG2", ignoreCase = true) &&
+                    !file.name.endsWith(".ini", ignoreCase = true) &&
+                    !file.name.contains("NTUSER.DAT{") &&
+                    !file.name.endsWith(".regtrans-ms", ignoreCase = true)
         }
         ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         ?: emptyList()
@@ -151,6 +146,12 @@ private fun handleCommand(
 ) {
     when {
         input == "ls" -> onRefresh()
+        input == "home" -> {
+            val home = File(System.getProperty("user.home"))
+            if (home.exists()) {
+                onDirChange(home)
+            }
+        }
         input == "cd .." -> {
             currentDir.parentFile?.takeIf { it.exists() }?.let { onDirChange(it) }
         }
