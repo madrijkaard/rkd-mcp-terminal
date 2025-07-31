@@ -33,7 +33,7 @@ fun MainView() {
             .background(Color.Black)
             .padding(12.dp)
     ) {
-        // Mostra o path atual
+        // Mostra o diretório atual (sem o comando)
         Text(
             text = currentDir.path,
             color = Color.Green,
@@ -42,13 +42,11 @@ fun MainView() {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // Scroll da listagem de arquivos
-        val scrollState = rememberScrollState()
+        // Listagem com scroll
         Column(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
         ) {
             output.forEach { file ->
                 val fileName = file.name
@@ -77,7 +75,7 @@ fun MainView() {
             }
         }
 
-        // Campo de entrada de texto
+        // Campo de entrada com autocomplete e comandos
         BasicTextField(
             value = inputText,
             onValueChange = { inputText = it },
@@ -92,14 +90,11 @@ fun MainView() {
                 .padding(8.dp)
                 .onPreviewKeyEvent { event ->
                     if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
-                        if (isCdCommand && cdPrefix.isNotEmpty()) {
-                            val matches = output.filter { it.isDirectory && it.name.startsWith(cdPrefix) }
-                            if (matches.size == 1 && cdPrefix.length < matches[0].name.length) {
-                                inputText = "cd ${matches[0].name}"
-                                return@onPreviewKeyEvent true
-                            }
-                        }
-                        false
+                        val candidates = output.filter { it.isDirectory && it.name.startsWith(cdPrefix) }
+                        if (isCdCommand && candidates.size == 1 && cdPrefix.length < candidates[0].name.length) {
+                            inputText = "cd ${candidates[0].name}"
+                            true
+                        } else false
                     } else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                         handleCommand(
                             inputText.trim(),
@@ -114,9 +109,7 @@ fun MainView() {
                         )
                         inputText = ""
                         true
-                    } else {
-                        false
-                    }
+                    } else false
                 },
             singleLine = true
         )
@@ -124,8 +117,28 @@ fun MainView() {
 }
 
 private fun listDirectory(dir: File): List<File> {
+    val isWindows = System.getProperty("os.name").lowercase().contains("win")
+    val unwantedWindowsFiles = listOf(
+        "ntuser.dat",
+        "ntuser.dat.log1",
+        "ntuser.dat.log2",
+        "ntuser.ini"
+    )
+
     return dir.listFiles()
-        ?.filter { !it.name.startsWith(".") }
+        ?.filter { file ->
+            val nameLower = file.name.lowercase()
+
+            val hiddenByDotOrIni = nameLower.startsWith(".") || nameLower.endsWith(".ini")
+            val hiddenByWindows = isWindows && (
+                    nameLower in unwantedWindowsFiles ||
+                            nameLower.contains("ntuser.dat{") ||
+                            nameLower.endsWith(".regtrans-ms") ||
+                            nameLower.endsWith(".blf")
+                    )
+
+            !hiddenByDotOrIni && !hiddenByWindows
+        }
         ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         ?: emptyList()
 }
