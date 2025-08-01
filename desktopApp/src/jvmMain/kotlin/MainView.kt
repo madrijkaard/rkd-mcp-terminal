@@ -271,7 +271,7 @@ fun MainView() {
                                         output = listDirectory(currentDir)
                                     }
                                 } else if (cmd.startsWith("spy ")) {
-                                    val supportedExtensions = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml")
+                                    val supportedExtensions = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
                                     val target = File(currentDir, prefix)
                                     if (target.exists() && supportedExtensions.contains(target.extension.lowercase())) {
                                         spyLines = extractTextLines(target)
