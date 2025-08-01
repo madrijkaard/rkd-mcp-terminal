@@ -4,6 +4,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.SpanStyle
@@ -22,14 +24,20 @@ fun MainView() {
     var inputText by remember { mutableStateOf("") }
     var currentDir by remember { mutableStateOf(File(System.getProperty("user.home"))) }
     var output by remember { mutableStateOf(listDirectory(currentDir)) }
+
     var showSpy by remember { mutableStateOf(false) }
     var spyLines by remember { mutableStateOf(listOf<String>()) }
     var spyIndex by remember { mutableStateOf(0) }
     var spyFileName by remember { mutableStateOf("") }
 
+    var showFileEditor by remember { mutableStateOf(false) }
+    var fileEditorContent by remember { mutableStateOf("") }
+    var fileEditorPath by remember { mutableStateOf<File?>(null) }
+
     val inputParts = inputText.trim().split(" ")
     val isCdCommand = inputParts.firstOrNull() == "cd"
     val isSpyCommand = inputParts.firstOrNull() == "spy" && inputParts.size == 2
+    val isFileCommand = inputParts.firstOrNull() == "file" && inputParts.size == 2
     val prefix = if (inputParts.size > 1) inputParts[1] else ""
 
     val matchedDir = output.filter { it.isDirectory && it.name.startsWith(prefix) }
@@ -41,7 +49,6 @@ fun MainView() {
             .background(Color.Black)
             .padding(12.dp)
     ) {
-        // Caminho atual
         Text(
             text = currentDir.path,
             color = Color.Green,
@@ -51,7 +58,6 @@ fun MainView() {
         )
 
         Row(modifier = Modifier.weight(1f)) {
-            // Listagem do lado esquerdo com rolagem
             Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 Column {
                     output.forEach { file ->
@@ -69,7 +75,8 @@ fun MainView() {
                                         append(name.substring(prefix.length))
                                     }
                                 }
-                            isSpyCommand && prefix.isNotEmpty() && file.isFile && name.startsWith(prefix) ->
+
+                            isSpyCommand && file.isFile && name.startsWith(prefix) ->
                                 buildAnnotatedString {
                                     append("$icon ")
                                     withStyle(SpanStyle(color = Color.Blue)) {
@@ -79,6 +86,18 @@ fun MainView() {
                                         append(name.substring(prefix.length))
                                     }
                                 }
+
+                            isFileCommand && file.isFile && name.startsWith(prefix) ->
+                                buildAnnotatedString {
+                                    append("$icon ")
+                                    withStyle(SpanStyle(color = Color(0xFFFFA500))) { // Laranja
+                                        append(name.substring(0, prefix.length))
+                                    }
+                                    withStyle(SpanStyle(color = Color.Green)) {
+                                        append(name.substring(prefix.length))
+                                    }
+                                }
+
                             else -> buildAnnotatedString {
                                 append("$icon ")
                                 withStyle(SpanStyle(color = Color.Green)) {
@@ -96,8 +115,7 @@ fun MainView() {
                 }
             }
 
-            // Linha divisória verde e conteúdo espiado
-            if (showSpy) {
+            if (showSpy || showFileEditor) {
                 Box(
                     Modifier
                         .fillMaxHeight()
@@ -108,15 +126,51 @@ fun MainView() {
                     Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
-                        .verticalScroll(rememberScrollState())
                 ) {
-                    Column {
-                        spyLines.drop(spyIndex).take(100).forEach {
-                            Text(
-                                text = it,
-                                color = Color.Green,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 13.sp
+                    if (showSpy) {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        ) {
+                            spyLines.drop(spyIndex).take(100).forEach {
+                                Text(
+                                    text = it,
+                                    color = Color.Green,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    } else if (showFileEditor) {
+                        val scrollState = rememberScrollState()
+                        val focusRequester = remember { FocusRequester() }
+
+                        LaunchedEffect(Unit) {
+                            focusRequester.requestFocus()
+                        }
+
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                                .padding(8.dp)
+                                .border(1.dp, Color.Green)
+                                .verticalScroll(scrollState)
+                                .focusable()
+                                .clickable { focusRequester.requestFocus() }
+                        ) {
+                            BasicTextField(
+                                value = fileEditorContent,
+                                onValueChange = { fileEditorContent = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
+                                textStyle = TextStyle(
+                                    color = Color.Green,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 13.sp
+                                ),
+                                singleLine = false,
+                                maxLines = Int.MAX_VALUE
                             )
                         }
                     }
@@ -124,7 +178,6 @@ fun MainView() {
             }
         }
 
-        // Campo de entrada
         BasicTextField(
             value = inputText,
             onValueChange = { inputText = it },
@@ -139,14 +192,23 @@ fun MainView() {
                 .padding(8.dp)
                 .onPreviewKeyEvent { event ->
                     if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
-                        if (isCdCommand && matchedDir.size == 1 && prefix.length < matchedDir[0].name.length) {
-                            inputText = "cd ${matchedDir[0].name}"
-                            true
-                        } else if (isSpyCommand && matchedFile.size == 1 && prefix.length < matchedFile[0].name.length) {
-                            inputText = "spy ${matchedFile[0].name}"
-                            true
-                        } else {
-                            false
+                        when {
+                            isCdCommand && matchedDir.size == 1 -> {
+                                inputText = "cd ${matchedDir[0].name}"
+                                true
+                            }
+
+                            isSpyCommand && matchedFile.size == 1 -> {
+                                inputText = "spy ${matchedFile[0].name}"
+                                true
+                            }
+
+                            isFileCommand && matchedFile.size == 1 -> {
+                                inputText = "file ${matchedFile[0].name}"
+                                true
+                            }
+
+                            else -> false
                         }
                     } else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                         when (val cmd = inputText.trim()) {
@@ -175,6 +237,23 @@ fun MainView() {
                                 spyFileName = ""
                             }
 
+                            "file save" -> {
+                                if (showFileEditor && fileEditorPath != null) {
+                                    fileEditorPath?.writeText(fileEditorContent)
+                                    showFileEditor = false
+                                    fileEditorContent = ""
+                                    fileEditorPath = null
+                                    output = listDirectory(currentDir)
+                                }
+                            }
+
+                            "file cancel" -> {
+                                showFileEditor = false
+                                fileEditorContent = ""
+                                fileEditorPath = null
+                                output = listDirectory(currentDir)
+                            }
+
                             else -> {
                                 if (cmd.startsWith("cd ")) {
                                     val target = File(currentDir, prefix)
@@ -183,12 +262,28 @@ fun MainView() {
                                         output = listDirectory(currentDir)
                                     }
                                 } else if (cmd.startsWith("spy ")) {
+                                    val supportedExtensions = listOf(
+                                        "pdf", "txt", "json", "xml", "java",
+                                        "log", "md", "py", "yml", "yaml", "properties"
+                                    )
                                     val target = File(currentDir, prefix)
-                                    if (target.exists() && target.extension.lowercase() == "pdf") {
-                                        spyLines = extractPdfTextLines(target)
+                                    if (target.exists() && supportedExtensions.contains(target.extension.lowercase())) {
+                                        spyLines = extractTextLines(target)
                                         spyIndex = 0
                                         showSpy = true
+                                        showFileEditor = false
                                         spyFileName = target.name
+                                    }
+                                } else if (cmd.startsWith("file ")) {
+                                    val parts = cmd.split(" ")
+                                    if (parts.size == 2) {
+                                        val file = File(currentDir, parts[1])
+                                        val exists = file.exists()
+                                        if (!exists) file.createNewFile()
+                                        fileEditorPath = file
+                                        fileEditorContent = if (exists) file.readText() else ""
+                                        showFileEditor = true
+                                        showSpy = false
                                     }
                                 }
                             }
@@ -221,13 +316,19 @@ private fun listDirectory(dir: File): List<File> {
         ?: emptyList()
 }
 
-private fun extractPdfTextLines(file: File): List<String> {
+private fun extractTextLines(file: File): List<String> {
     return try {
-        PDDocument.load(file).use { document ->
-            val stripper = PDFTextStripper()
-            stripper.getText(document).split("\n")
+        when (file.extension.lowercase()) {
+            "pdf" -> {
+                PDDocument.load(file).use { document ->
+                    val stripper = PDFTextStripper()
+                    stripper.getText(document).split("\n")
+                }
+            }
+
+            else -> file.readLines()
         }
     } catch (e: Exception) {
-        listOf("Erro ao abrir PDF: ${e.message}")
+        listOf("Erro ao abrir arquivo: ${e.message}")
     }
 }
