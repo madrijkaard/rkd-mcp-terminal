@@ -34,7 +34,7 @@ data class Session(
     var showFileEditor: Boolean = false,
     var fileEditorContent: String = "",
     var fileEditorPath: File? = null,
-    var splitRatio: Float = 0.3f
+    var splitRatio: MutableState<Float> = mutableStateOf(0.3f)
 )
 
 @Composable
@@ -128,7 +128,7 @@ fun MainView() {
         }
 
         Row(modifier = Modifier.weight(1f)) {
-            Box(modifier = Modifier.weight(session.splitRatio).verticalScroll(rememberScrollState())) {
+            Box(modifier = Modifier.weight(session.splitRatio.value).verticalScroll(rememberScrollState())) {
                 Column {
                     session.output.forEach { file ->
                         val name = file.name
@@ -186,13 +186,13 @@ fun MainView() {
                 Box(
                     Modifier
                         .fillMaxHeight()
-                        .width(4.dp)
+                        .width(2.dp)
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
-                                val sensitivity = 0.05f
+                                val sensitivity = 0.1f
                                 val deltaRatio = (dragAmount.x / size.width.toFloat()) * sensitivity
-                                session.splitRatio = (session.splitRatio + deltaRatio).coerceIn(0.1f, 0.9f)
+                                session.splitRatio.value = (session.splitRatio.value + deltaRatio).coerceIn(0.1f, 0.9f)
                             }
                         }
                         .background(Color.Green)
@@ -200,7 +200,7 @@ fun MainView() {
 
                 Box(
                     Modifier
-                        .weight(1f - session.splitRatio)
+                        .weight(1f - session.splitRatio.value)
                         .padding(start = 8.dp)
                 ) {
                     if (session.showSpy) {
@@ -334,7 +334,7 @@ fun MainView() {
                                     if (target.exists() && supported.contains(target.extension.lowercase())) {
                                         session.spyLines = extractTextLines(target)
                                         session.spyIndex = 0
-                                        session.splitRatio = 0.3f
+                                        session.splitRatio.value = 0.3f
                                         session.showSpy = true
                                         session.showFileEditor = false
                                         session.spyFileName = target.name
@@ -348,7 +348,7 @@ fun MainView() {
                                         if (!exists) file.createNewFile()
                                         session.fileEditorPath = file
                                         session.fileEditorContent = if (exists) file.readText() else ""
-                                        session.splitRatio = 0.3f
+                                        session.splitRatio.value = 0.3f
                                         session.showFileEditor = true
                                         session.showSpy = false
                                     }
