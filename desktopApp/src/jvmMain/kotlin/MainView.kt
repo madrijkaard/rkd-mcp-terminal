@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -18,27 +19,34 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.window.Dialog
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import java.io.File
 
+data class Session(
+    var currentDir: File = File(System.getProperty("user.home")),
+    var output: List<File> = listDirectory(File(System.getProperty("user.home"))),
+    var showSpy: Boolean = false,
+    var spyLines: List<String> = emptyList(),
+    var spyIndex: Int = 0,
+    var spyFileName: String = "",
+    var showFileEditor: Boolean = false,
+    var fileEditorContent: String = "",
+    var fileEditorPath: File? = null,
+    var splitRatio: Float = 0.3f
+)
+
 @Composable
 fun MainView() {
     var inputText by remember { mutableStateOf("") }
-    var currentDir by remember { mutableStateOf(File(System.getProperty("user.home"))) }
-    var output by remember { mutableStateOf(listDirectory(currentDir)) }
+    val sessions = remember { mutableStateListOf(Session()) }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    var showSettingsPopup by remember { mutableStateOf(false) }
 
-    var showSpy by remember { mutableStateOf(false) }
-    var spyLines by remember { mutableStateOf(listOf<String>()) }
-    var spyIndex by remember { mutableStateOf(0) }
-    var spyFileName by remember { mutableStateOf("") }
-
-    var showFileEditor by remember { mutableStateOf(false) }
-    var fileEditorContent by remember { mutableStateOf("") }
-    var fileEditorPath by remember { mutableStateOf<File?>(null) }
-
-    val splitRatio = remember { mutableStateOf(0.5f) }
+    val session = sessions[selectedTabIndex]
+    val currentDir = session.currentDir
+    val output = session.output
 
     val inputParts = inputText.trim().split(" ")
     val isCdCommand = inputParts.firstOrNull() == "cd"
@@ -58,26 +66,71 @@ fun MainView() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .height(32.dp)
+                .background(Color(0xFF1E1E1E))
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                sessions.forEachIndexed { index, _ ->
+                    val isSelected = selectedTabIndex == index
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .fillMaxHeight()
+                            .background(if (isSelected) Color(0xFF2D2D2D) else Color(0xFF1E1E1E))
+                            .border(1.dp, Color.Black)
+                            .clickable { selectedTabIndex = index }
+                            .padding(horizontal = 8.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            text = "Aba ${index + 1}",
+                            color = if (isSelected) Color.Green else Color.LightGray,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 13.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .width(32.dp)
+                    .fillMaxHeight()
+                    .clickable { showSettingsPopup = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("⚙️", fontSize = 16.sp)
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = currentDir.path,
+                text = session.currentDir.path,
                 color = Color.Green,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 14.sp
             )
             when {
-                showSpy -> Text("[spy mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
-                showFileEditor -> Text("[edit mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                session.showSpy -> Text("[spy mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                session.showFileEditor -> Text("[edit mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
             }
         }
 
         Row(modifier = Modifier.weight(1f)) {
-            Box(modifier = Modifier.weight(splitRatio.value).verticalScroll(rememberScrollState())) {
+            Box(modifier = Modifier.weight(session.splitRatio).verticalScroll(rememberScrollState())) {
                 Column {
-                    output.forEach { file ->
+                    session.output.forEach { file ->
                         val name = file.name
                         val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
 
@@ -129,7 +182,7 @@ fun MainView() {
                 }
             }
 
-            if (showSpy || showFileEditor) {
+            if (session.showSpy || session.showFileEditor) {
                 Box(
                     Modifier
                         .fillMaxHeight()
@@ -139,7 +192,7 @@ fun MainView() {
                                 change.consume()
                                 val sensitivity = 0.05f
                                 val deltaRatio = (dragAmount.x / size.width.toFloat()) * sensitivity
-                                splitRatio.value = (splitRatio.value + deltaRatio).coerceIn(0.1f, 0.9f)
+                                session.splitRatio = (session.splitRatio + deltaRatio).coerceIn(0.1f, 0.9f)
                             }
                         }
                         .background(Color.Green)
@@ -147,14 +200,14 @@ fun MainView() {
 
                 Box(
                     Modifier
-                        .weight(1f - splitRatio.value)
+                        .weight(1f - session.splitRatio)
                         .padding(start = 8.dp)
                 ) {
-                    if (showSpy) {
+                    if (session.showSpy) {
                         Column(
                             modifier = Modifier.verticalScroll(rememberScrollState())
                         ) {
-                            spyLines.drop(spyIndex).take(100).forEach {
+                            session.spyLines.drop(session.spyIndex).take(100).forEach {
                                 Text(
                                     text = it,
                                     color = Color.Green,
@@ -163,7 +216,7 @@ fun MainView() {
                                 )
                             }
                         }
-                    } else if (showFileEditor) {
+                    } else if (session.showFileEditor) {
                         val scrollState = rememberScrollState()
                         val focusRequester = remember { FocusRequester() }
 
@@ -182,8 +235,8 @@ fun MainView() {
                                 .clickable { focusRequester.requestFocus() }
                         ) {
                             BasicTextField(
-                                value = fileEditorContent,
-                                onValueChange = { fileEditorContent = it },
+                                value = session.fileEditorContent,
+                                onValueChange = { session.fileEditorContent = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .focusRequester(focusRequester),
@@ -233,81 +286,109 @@ fun MainView() {
                         }
                     } else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                         when (val cmd = inputText.trim()) {
-                            "ls" -> output = listDirectory(currentDir)
+                            "new tab" -> {
+                                sessions.add(Session())
+                                selectedTabIndex = sessions.lastIndex
+                            }
+                            "ls" -> session.output = listDirectory(session.currentDir)
                             "cd .." -> {
-                                currentDir.parentFile?.takeIf { it.exists() }?.let {
-                                    currentDir = it
-                                    output = listDirectory(it)
+                                session.currentDir.parentFile?.takeIf { it.exists() }?.let {
+                                    session.currentDir = it
+                                    session.output = listDirectory(it)
                                 }
                             }
                             "home" -> {
-                                currentDir = File(System.getProperty("user.home"))
-                                output = listDirectory(currentDir)
+                                session.currentDir = File(System.getProperty("user.home"))
+                                session.output = listDirectory(session.currentDir)
                             }
-                            "spy continue" -> if (showSpy) spyIndex += 100
+                            "spy continue" -> if (session.showSpy) session.spyIndex += 100
                             "spy exit" -> {
-                                showSpy = false
-                                spyLines = emptyList()
-                                spyIndex = 0
-                                spyFileName = ""
+                                session.showSpy = false
+                                session.spyLines = emptyList()
+                                session.spyIndex = 0
+                                session.spyFileName = ""
                             }
                             "file save" -> {
-                                if (showFileEditor && fileEditorPath != null) {
-                                    fileEditorPath?.writeText(fileEditorContent)
-                                    showFileEditor = false
-                                    fileEditorContent = ""
-                                    fileEditorPath = null
-                                    output = listDirectory(currentDir)
-                                }
+                                session.fileEditorPath?.writeText(session.fileEditorContent)
+                                session.showFileEditor = false
+                                session.fileEditorContent = ""
+                                session.fileEditorPath = null
+                                session.output = listDirectory(session.currentDir)
                             }
                             "file cancel" -> {
-                                showFileEditor = false
-                                fileEditorContent = ""
-                                fileEditorPath = null
-                                output = listDirectory(currentDir)
+                                session.showFileEditor = false
+                                session.fileEditorContent = ""
+                                session.fileEditorPath = null
+                                session.output = listDirectory(session.currentDir)
                             }
                             else -> {
                                 if (cmd.startsWith("cd ")) {
-                                    val target = File(currentDir, prefix)
+                                    val target = File(session.currentDir, prefix)
                                     if (target.exists() && target.isDirectory) {
-                                        currentDir = target
-                                        output = listDirectory(currentDir)
+                                        session.currentDir = target
+                                        session.output = listDirectory(target)
                                     }
                                 } else if (cmd.startsWith("spy ")) {
-                                    val supportedExtensions = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
-                                    val target = File(currentDir, prefix)
-                                    if (target.exists() && supportedExtensions.contains(target.extension.lowercase())) {
-                                        spyLines = extractTextLines(target)
-                                        spyIndex = 0
-                                        splitRatio.value = 0.3f
-                                        showSpy = true
-                                        showFileEditor = false
-                                        spyFileName = target.name
+                                    val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
+                                    val target = File(session.currentDir, prefix)
+                                    if (target.exists() && supported.contains(target.extension.lowercase())) {
+                                        session.spyLines = extractTextLines(target)
+                                        session.spyIndex = 0
+                                        session.splitRatio = 0.3f
+                                        session.showSpy = true
+                                        session.showFileEditor = false
+                                        session.spyFileName = target.name
                                     }
                                 } else if (cmd.startsWith("file ")) {
                                     val parts = cmd.split(" ")
                                     if (parts.size == 2) {
-                                        val file = File(currentDir, parts[1])
+                                        val file = File(session.currentDir, parts[1])
                                         if (file.extension.lowercase() == "pdf") return@onPreviewKeyEvent true
                                         val exists = file.exists()
                                         if (!exists) file.createNewFile()
-                                        fileEditorPath = file
-                                        fileEditorContent = if (exists) file.readText() else ""
-                                        splitRatio.value = 0.3f
-                                        showFileEditor = true
-                                        showSpy = false
+                                        session.fileEditorPath = file
+                                        session.fileEditorContent = if (exists) file.readText() else ""
+                                        session.splitRatio = 0.3f
+                                        session.showFileEditor = true
+                                        session.showSpy = false
                                     }
                                 }
                             }
                         }
                         inputText = ""
                         true
-                    } else {
-                        false
-                    }
+                    } else false
                 },
             singleLine = true
         )
+    }
+
+    if (showSettingsPopup) {
+        Dialog(onDismissRequest = { showSettingsPopup = false }) {
+            Box(
+                modifier = Modifier
+                    .size(300.dp, 180.dp)
+                    .background(Color.DarkGray)
+                    .border(2.dp, Color.Green)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Configurações", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 16.sp)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Conteúdo do popup", color = Color.White, fontFamily = FontFamily.Monospace)
+                    Spacer(Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .clickable { showSettingsPopup = false }
+                            .background(Color.Green)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text("Fechar", color = Color.Black, fontFamily = FontFamily.Monospace)
+                    }
+                }
+            }
+        }
     }
 }
 
