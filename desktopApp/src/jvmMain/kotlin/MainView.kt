@@ -1,4 +1,5 @@
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
@@ -9,6 +10,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -35,6 +37,8 @@ fun MainView() {
     var showFileEditor by remember { mutableStateOf(false) }
     var fileEditorContent by remember { mutableStateOf("") }
     var fileEditorPath by remember { mutableStateOf<File?>(null) }
+
+    val splitRatio = remember { mutableStateOf(0.5f) }
 
     val inputParts = inputText.trim().split(" ")
     val isCdCommand = inputParts.firstOrNull() == "cd"
@@ -65,23 +69,13 @@ fun MainView() {
                 fontSize = 14.sp
             )
             when {
-                showSpy -> Text(
-                    text = "[spy mode]",
-                    color = Color.Green,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp
-                )
-                showFileEditor -> Text(
-                    text = "[edit mode]",
-                    color = Color.Green,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp
-                )
+                showSpy -> Text("[spy mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                showFileEditor -> Text("[edit mode]", color = Color.Green, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
             }
         }
 
         Row(modifier = Modifier.weight(1f)) {
-            Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Box(modifier = Modifier.weight(splitRatio.value).verticalScroll(rememberScrollState())) {
                 Column {
                     output.forEach { file ->
                         val name = file.name
@@ -139,12 +133,21 @@ fun MainView() {
                 Box(
                     Modifier
                         .fillMaxHeight()
-                        .width(2.dp)
+                        .width(4.dp)
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                val sensitivity = 0.05f
+                                val deltaRatio = (dragAmount.x / size.width.toFloat()) * sensitivity
+                                splitRatio.value = (splitRatio.value + deltaRatio).coerceIn(0.1f, 0.9f)
+                            }
+                        }
                         .background(Color.Green)
                 )
+
                 Box(
                     Modifier
-                        .weight(1f)
+                        .weight(1f - splitRatio.value)
                         .padding(start = 8.dp)
                 ) {
                     if (showSpy) {
@@ -276,6 +279,7 @@ fun MainView() {
                                     if (target.exists() && supportedExtensions.contains(target.extension.lowercase())) {
                                         spyLines = extractTextLines(target)
                                         spyIndex = 0
+                                        splitRatio.value = 0.3f
                                         showSpy = true
                                         showFileEditor = false
                                         spyFileName = target.name
@@ -289,6 +293,7 @@ fun MainView() {
                                         if (!exists) file.createNewFile()
                                         fileEditorPath = file
                                         fileEditorContent = if (exists) file.readText() else ""
+                                        splitRatio.value = 0.3f
                                         showFileEditor = true
                                         showSpy = false
                                     }
