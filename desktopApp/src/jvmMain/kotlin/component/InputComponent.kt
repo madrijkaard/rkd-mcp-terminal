@@ -47,7 +47,8 @@ fun InputComponent() {
                             StateControl.inputText = "spy ${StateControl.matchedFile[0].name}"
                             true
                         }
-                        StateControl.isFileCommand && StateControl.matchedFile.size == 1 && StateControl.matchedFile[0].extension.lowercase() != "pdf" -> {
+                        StateControl.isFileCommand && StateControl.matchedFile.size == 1 &&
+                                StateControl.matchedFile[0].extension.lowercase() != "pdf" -> {
                             StateControl.inputText = "file ${StateControl.matchedFile[0].name}"
                             true
                         }
@@ -59,27 +60,41 @@ fun InputComponent() {
                             StateControl.sessions.add(SessionDto())
                             StateControl.selectedTabIndex = StateControl.sessions.lastIndex
                         }
+
+                        "close tab" -> {
+                            if (StateControl.sessions.size > 1) {
+                                StateControl.sessions.removeAt(StateControl.selectedTabIndex)
+                                StateControl.selectedTabIndex =
+                                    StateControl.selectedTabIndex.coerceAtMost(StateControl.sessions.lastIndex)
+                            }
+                        }
+
                         "ls" -> StateControl.session.output = listDirectory(StateControl.session.currentDir)
+
                         "cd .." -> {
                             StateControl.session.currentDir.parentFile?.takeIf { it.exists() }?.let {
                                 StateControl.session.currentDir = it
                                 StateControl.session.output = listDirectory(it)
                             }
                         }
+
                         "home" -> {
                             StateControl.session.currentDir = File(System.getProperty("user.home"))
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
                         }
+
                         "spy n" -> {
                             if (StateControl.session.showSpy) {
                                 StateControl.session.spyIndex += 100
                             }
                         }
+
                         "spy b" -> {
                             if (StateControl.session.showSpy) {
                                 StateControl.session.spyIndex = (StateControl.session.spyIndex - 100).coerceAtLeast(0)
                             }
                         }
+
                         "spy exit" -> {
                             StateControl.session.showSpy = false
                             StateControl.session.spyLines = emptyList()
@@ -87,6 +102,7 @@ fun InputComponent() {
                             StateControl.session.spyFileName = ""
                             StateControl.session.mode.value = ""
                         }
+
                         "file save" -> {
                             StateControl.session.fileEditorPath?.writeText(StateControl.session.fileEditorContent)
                             StateControl.session.showFileEditor = false
@@ -95,6 +111,7 @@ fun InputComponent() {
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
                             StateControl.session.mode.value = ""
                         }
+
                         "file cancel" -> {
                             StateControl.session.showFileEditor = false
                             StateControl.session.fileEditorContent = ""
@@ -102,6 +119,7 @@ fun InputComponent() {
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
                             StateControl.session.mode.value = ""
                         }
+
                         else -> {
                             if (cmd.startsWith("cd ")) {
                                 val target = File(StateControl.session.currentDir, StateControl.prefix)
