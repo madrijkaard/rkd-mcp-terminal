@@ -15,5 +15,6 @@ data class SessionDto(
     var showFileEditor: Boolean = false,
     var fileEditorContent: String = "",
     var fileEditorPath: File? = null,
-    var splitRatio: MutableState<Float> = mutableStateOf(0.3f)
+    var splitRatio: MutableState<Float> = mutableStateOf(0.3f),
+    var mode: MutableState<String> = mutableStateOf("")
 )

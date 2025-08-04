@@ -51,7 +51,7 @@ fun BodyComponent() {
                         StateControl.isSpyCommand && file.isFile && name.startsWith(StateControl.prefix) ->
                             buildAnnotatedString {
                                 append("$icon ")
-                                withStyle(SpanStyle(color = Color.Blue)) {
+                                withStyle(SpanStyle(color = Color.White)) {
                                     append(name.substring(0, StateControl.prefix.length))
                                 }
                                 withStyle(SpanStyle(color = Color.Green)) {
@@ -62,7 +62,7 @@ fun BodyComponent() {
                         StateControl.isFileCommand && file.isFile && name.startsWith(StateControl.prefix) && file.extension.lowercase() != "pdf" ->
                             buildAnnotatedString {
                                 append("$icon ")
-                                withStyle(SpanStyle(color = Color(0xFFFFA500))) {
+                                withStyle(SpanStyle(color = Color.White)) {
                                     append(name.substring(0, StateControl.prefix.length))
                                 }
                                 withStyle(SpanStyle(color = Color.Green)) {
@@ -110,16 +110,28 @@ fun BodyComponent() {
                     .padding(start = 8.dp)
             ) {
                 if (StateControl.session.showSpy) {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    val scrollState = rememberScrollState()
+
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black)
+                            .padding(8.dp)
+                            .border(1.dp, Color.Green)
+                            .verticalScroll(scrollState)
                     ) {
-                        StateControl.session.spyLines.drop(StateControl.session.spyIndex).take(100).forEach {
-                            Text(
-                                text = it,
-                                color = Color.Green,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 13.sp
-                            )
+                        Column {
+                            StateControl.session.spyLines
+                                .drop(StateControl.session.spyIndex)
+                                .take(100)
+                                .forEach {
+                                    Text(
+                                        text = it,
+                                        color = Color.Green,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp
+                                    )
+                                }
                         }
                     }
                 } else if (StateControl.session.showFileEditor) {

@@ -70,12 +70,22 @@ fun InputComponent() {
                             StateControl.session.currentDir = File(System.getProperty("user.home"))
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
                         }
-                        "spy continue" -> if (StateControl.session.showSpy) StateControl.session.spyIndex += 100
+                        "spy n" -> {
+                            if (StateControl.session.showSpy) {
+                                StateControl.session.spyIndex += 100
+                            }
+                        }
+                        "spy b" -> {
+                            if (StateControl.session.showSpy) {
+                                StateControl.session.spyIndex = (StateControl.session.spyIndex - 100).coerceAtLeast(0)
+                            }
+                        }
                         "spy exit" -> {
                             StateControl.session.showSpy = false
                             StateControl.session.spyLines = emptyList()
                             StateControl.session.spyIndex = 0
                             StateControl.session.spyFileName = ""
+                            StateControl.session.mode.value = ""
                         }
                         "file save" -> {
                             StateControl.session.fileEditorPath?.writeText(StateControl.session.fileEditorContent)
@@ -83,12 +93,14 @@ fun InputComponent() {
                             StateControl.session.fileEditorContent = ""
                             StateControl.session.fileEditorPath = null
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            StateControl.session.mode.value = ""
                         }
                         "file cancel" -> {
                             StateControl.session.showFileEditor = false
                             StateControl.session.fileEditorContent = ""
                             StateControl.session.fileEditorPath = null
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            StateControl.session.mode.value = ""
                         }
                         else -> {
                             if (cmd.startsWith("cd ")) {
@@ -97,6 +109,7 @@ fun InputComponent() {
                                     StateControl.session.currentDir = target
                                     StateControl.session.output = listDirectory(target)
                                 }
+                                StateControl.session.mode.value = ""
                             } else if (cmd.startsWith("spy ")) {
                                 val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
                                 val target = File(StateControl.session.currentDir, StateControl.prefix)
@@ -107,6 +120,7 @@ fun InputComponent() {
                                     StateControl.session.showSpy = true
                                     StateControl.session.showFileEditor = false
                                     StateControl.session.spyFileName = target.name
+                                    StateControl.session.mode.value = "[spy mode]"
                                 }
                             } else if (cmd.startsWith("file ")) {
                                 val parts = cmd.split(" ")
@@ -120,7 +134,10 @@ fun InputComponent() {
                                     StateControl.session.splitRatio.value = 0.3f
                                     StateControl.session.showFileEditor = true
                                     StateControl.session.showSpy = false
+                                    StateControl.session.mode.value = "[file mode]"
                                 }
+                            } else {
+                                StateControl.session.mode.value = ""
                             }
                         }
                     }

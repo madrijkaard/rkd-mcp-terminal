@@ -1,9 +1,7 @@
 package component
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,33 +14,36 @@ import control.StateControl
 
 @Composable
 fun SubHeaderComponent() {
-    Row(
+    val session = StateControl.session
+    val modeLabel = session.mode.value
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .height(30.dp)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            text = StateControl.session.currentDir.path,
-            color = Color.Green,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 14.sp
-        )
-        when {
-            StateControl.session.showSpy -> Text(
-                "[spy mode]",
-                color = Color.Green,
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = session.currentDir.absolutePath,
+                fontSize = 14.sp,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp
+                color = Color.Green,
+                modifier = Modifier.weight(1f)
             )
 
-            StateControl.session.showFileEditor -> Text(
-                "[edit mode]",
-                color = Color.Green,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp
-            )
+            if (modeLabel.isNotEmpty()) {
+                Text(
+                    text = modeLabel,
+                    fontSize = 14.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.Green
+                )
+            }
         }
     }
 }
