@@ -36,39 +36,35 @@ fun InputComponent() {
             .background(Color.DarkGray)
             .padding(8.dp)
             .onPreviewKeyEvent { event ->
+                // AUTOCOMPLETE
                 if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
-                    val matches = StateControl.matchedAll
+                    val input = StateControl.inputText.text.trim()
+                    val parts = input.split(" ")
+                    if (parts.size == 2) {
+                        val command = parts[0]
+                        val matches = StateControl.matchedAll
 
-                    val completedText = if (matches.size == 1) {
-                        val match = matches[0]
-                        if (match.isDirectory) {
-                            "spy ${match.name}"
-                        } else {
-                            // Se houver também um diretório com mesmo nome base, exige extensão
-                            val sameNamedDir = StateControl.matchedDir.any { it.name == match.nameWithoutExtension }
-                            if (sameNamedDir) {
-                                "spy ${match.name}"
-                            } else {
-                                "spy ${match.nameWithoutExtension}"
-                            }
+                        if (matches.size == 1) {
+                            val match = matches[0]
+                            val completedText = "$command ${match.name}"
+                            StateControl.inputText = TextFieldValue(
+                                text = completedText,
+                                selection = TextRange(completedText.length)
+                            )
+                            return@onPreviewKeyEvent true
                         }
-                    } else null
-
-                    if (completedText != null) {
-                        StateControl.inputText = TextFieldValue(
-                            text = completedText,
-                            selection = TextRange(completedText.length)
-                        )
-                        true
-                    } else false
+                    }
+                    return@onPreviewKeyEvent false
                 }
 
+                // ENTER
                 else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                     val cmd = StateControl.inputText.text.trim()
                     when (cmd) {
                         "new tab" -> {
                             StateControl.sessions.add(SessionDto())
                             StateControl.selectedTabIndex = StateControl.sessions.lastIndex
+                            resetVisualState()
                         }
 
                         "close tab" -> {
@@ -76,21 +72,27 @@ fun InputComponent() {
                                 StateControl.sessions.removeAt(StateControl.selectedTabIndex)
                                 StateControl.selectedTabIndex =
                                     StateControl.selectedTabIndex.coerceAtMost(StateControl.sessions.lastIndex)
+                                resetVisualState()
                             }
                         }
 
-                        "ls" -> StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                        "ls" -> {
+                            StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            resetVisualState()
+                        }
 
                         "cd .." -> {
                             StateControl.session.currentDir.parentFile?.takeIf { it.exists() }?.let {
                                 StateControl.session.currentDir = it
                                 StateControl.session.output = listDirectory(it)
                             }
+                            resetVisualState()
                         }
 
                         "home" -> {
                             StateControl.session.currentDir = File(System.getProperty("user.home"))
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            resetVisualState()
                         }
 
                         "spy n" -> {
@@ -142,7 +144,7 @@ fun InputComponent() {
                                     StateControl.session.currentDir = target
                                     StateControl.session.output = listDirectory(target)
                                 }
-                                StateControl.session.mode.value = ""
+                                resetVisualState()
                             } else if (cmd.startsWith("spy ")) {
                                 val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
                                 val target = File(StateControl.session.currentDir, StateControl.prefix)
@@ -194,4 +196,17 @@ fun InputComponent() {
             },
         singleLine = true
     )
+}
+
+// 🔁 Função auxiliar para limpar visualizações laterais
+private fun resetVisualState() {
+    StateControl.session.showSpy = false
+    StateControl.session.spyLines = emptyList()
+    StateControl.session.spyDirContent = emptyList()
+    StateControl.session.spyIndex = 0
+    StateControl.session.spyFileName = ""
+    StateControl.session.showFileEditor = false
+    StateControl.session.fileEditorContent = ""
+    StateControl.session.fileEditorPath = null
+    StateControl.session.mode.value = ""
 }
