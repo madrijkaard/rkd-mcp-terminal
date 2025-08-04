@@ -34,39 +34,42 @@ fun BodyComponent() {
             Column {
                 StateControl.session.output.forEach { file ->
                     val name = file.name
+                    val nameLower = name.lowercase()
+                    val prefix = StateControl.prefix
+
                     val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
 
                     val annotated = when {
-                        StateControl.isCdCommand && file.isDirectory && name.startsWith(StateControl.prefix) ->
+                        StateControl.isCdCommand && file.isDirectory && nameLower.startsWith(prefix) ->
                             buildAnnotatedString {
                                 append("$icon ")
                                 withStyle(SpanStyle(color = Color.White)) {
-                                    append(name.substring(0, StateControl.prefix.length))
+                                    append(name.substring(0, prefix.length))
                                 }
                                 withStyle(SpanStyle(color = Color.Green)) {
-                                    append(name.substring(StateControl.prefix.length))
+                                    append(name.substring(prefix.length))
                                 }
                             }
 
-                        StateControl.isSpyCommand && file.isFile && name.startsWith(StateControl.prefix) ->
+                        StateControl.isSpyCommand && file.isFile && nameLower.startsWith(prefix) ->
                             buildAnnotatedString {
                                 append("$icon ")
                                 withStyle(SpanStyle(color = Color.White)) {
-                                    append(name.substring(0, StateControl.prefix.length))
+                                    append(name.substring(0, prefix.length))
                                 }
                                 withStyle(SpanStyle(color = Color.Green)) {
-                                    append(name.substring(StateControl.prefix.length))
+                                    append(name.substring(prefix.length))
                                 }
                             }
 
-                        StateControl.isFileCommand && file.isFile && name.startsWith(StateControl.prefix) && file.extension.lowercase() != "pdf" ->
+                        StateControl.isFileCommand && file.isFile && nameLower.startsWith(prefix) && file.extension.lowercase() != "pdf" ->
                             buildAnnotatedString {
                                 append("$icon ")
                                 withStyle(SpanStyle(color = Color.White)) {
-                                    append(name.substring(0, StateControl.prefix.length))
+                                    append(name.substring(0, prefix.length))
                                 }
                                 withStyle(SpanStyle(color = Color.Green)) {
-                                    append(name.substring(StateControl.prefix.length))
+                                    append(name.substring(prefix.length))
                                 }
                             }
 

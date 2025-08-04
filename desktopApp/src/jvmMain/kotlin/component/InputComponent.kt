@@ -7,13 +7,11 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import control.StateControl
@@ -38,24 +36,33 @@ fun InputComponent() {
             .padding(8.dp)
             .onPreviewKeyEvent { event ->
                 if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
-                    when {
-                        StateControl.isCdCommand && StateControl.matchedDir.size == 1 -> {
-                            StateControl.inputText = "cd ${StateControl.matchedDir[0].name}"
-                            true
-                        }
-                        StateControl.isSpyCommand && StateControl.matchedFile.size == 1 -> {
-                            StateControl.inputText = "spy ${StateControl.matchedFile[0].name}"
-                            true
-                        }
+                    val completedText = when {
+                        StateControl.isCdCommand && StateControl.matchedDir.size == 1 ->
+                            "cd ${StateControl.matchedDir[0].name}"
+
+                        StateControl.isSpyCommand && StateControl.matchedFile.size == 1 ->
+                            "spy ${StateControl.matchedFile[0].name}"
+
                         StateControl.isFileCommand && StateControl.matchedFile.size == 1 &&
-                                StateControl.matchedFile[0].extension.lowercase() != "pdf" -> {
-                            StateControl.inputText = "file ${StateControl.matchedFile[0].name}"
-                            true
-                        }
-                        else -> false
+                                StateControl.matchedFile[0].extension.lowercase() != "pdf" ->
+                            "file ${StateControl.matchedFile[0].name}"
+
+                        else -> null
                     }
-                } else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
-                    when (val cmd = StateControl.inputText.trim()) {
+
+                    if (completedText != null) {
+                        // Posiciona o cursor no final do texto autocompletado
+                        StateControl.inputText = TextFieldValue(
+                            text = completedText,
+                            selection = TextRange(completedText.length)
+                        )
+                        true
+                    } else false
+                }
+
+                else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
+                    val cmd = StateControl.inputText.text.trim()
+                    when (cmd) {
                         "new tab" -> {
                             StateControl.sessions.add(SessionDto())
                             StateControl.selectedTabIndex = StateControl.sessions.lastIndex
@@ -159,7 +166,9 @@ fun InputComponent() {
                             }
                         }
                     }
-                    StateControl.inputText = ""
+
+                    // Limpa o campo de entrada
+                    StateControl.inputText = TextFieldValue("")
                     true
                 } else false
             },
