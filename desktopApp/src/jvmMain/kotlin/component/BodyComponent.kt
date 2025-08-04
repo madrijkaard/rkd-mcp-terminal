@@ -51,7 +51,7 @@ fun BodyComponent() {
                                 }
                             }
 
-                        StateControl.isSpyCommand && file.isFile && nameLower.startsWith(prefix) ->
+                        StateControl.isSpyCommand && nameLower.startsWith(prefix) ->
                             buildAnnotatedString {
                                 append("$icon ")
                                 withStyle(SpanStyle(color = Color.White)) {
@@ -123,18 +123,41 @@ fun BodyComponent() {
                             .border(1.dp, Color.Green)
                             .verticalScroll(scrollState)
                     ) {
-                        Column {
-                            StateControl.session.spyLines
-                                .drop(StateControl.session.spyIndex)
-                                .take(100)
-                                .forEach {
+                        if (StateControl.session.spyLines.isNotEmpty()) {
+                            // Caso spy seja de arquivo
+                            Column {
+                                StateControl.session.spyLines
+                                    .drop(StateControl.session.spyIndex)
+                                    .take(100)
+                                    .forEach {
+                                        Text(
+                                            text = it,
+                                            color = Color.Green,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 13.sp
+                                        )
+                                    }
+                            }
+                        } else if (StateControl.session.spyDirContent.isNotEmpty()) {
+                            // Caso spy seja de diretório
+                            Column {
+                                StateControl.session.spyDirContent.forEach { file ->
+                                    val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
                                     Text(
-                                        text = it,
+                                        text = "$icon ${file.name}",
                                         color = Color.Green,
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 13.sp
                                     )
                                 }
+                            }
+                        } else {
+                            Text(
+                                text = "Nenhum conteúdo para exibir.",
+                                color = Color.DarkGray,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                 } else if (StateControl.session.showFileEditor) {

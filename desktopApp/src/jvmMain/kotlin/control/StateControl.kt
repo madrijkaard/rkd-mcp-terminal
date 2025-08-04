@@ -46,6 +46,10 @@ object StateControl {
     val matchedFile: List<File>
         get() = output.filter { it.isFile && it.name.lowercase().startsWith(prefix) }
 
+    // NOVO: junta arquivos e diretórios compatíveis
+    val matchedAll: List<File>
+        get() = output.filter { it.name.lowercase().startsWith(prefix) }
+
     init {
         println("BillPughSingleton instanciado")
     }

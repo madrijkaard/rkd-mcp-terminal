@@ -37,19 +37,22 @@ fun InputComponent() {
             .padding(8.dp)
             .onPreviewKeyEvent { event ->
                 if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
-                    val completedText = when {
-                        StateControl.isCdCommand && StateControl.matchedDir.size == 1 ->
-                            "cd ${StateControl.matchedDir[0].name}"
+                    val matches = StateControl.matchedAll
 
-                        StateControl.isSpyCommand && StateControl.matchedFile.size == 1 ->
-                            "spy ${StateControl.matchedFile[0].name}"
-
-                        StateControl.isFileCommand && StateControl.matchedFile.size == 1 &&
-                                StateControl.matchedFile[0].extension.lowercase() != "pdf" ->
-                            "file ${StateControl.matchedFile[0].name}"
-
-                        else -> null
-                    }
+                    val completedText = if (matches.size == 1) {
+                        val match = matches[0]
+                        if (match.isDirectory) {
+                            "spy ${match.name}"
+                        } else {
+                            // Se houver também um diretório com mesmo nome base, exige extensão
+                            val sameNamedDir = StateControl.matchedDir.any { it.name == match.nameWithoutExtension }
+                            if (sameNamedDir) {
+                                "spy ${match.name}"
+                            } else {
+                                "spy ${match.nameWithoutExtension}"
+                            }
+                        }
+                    } else null
 
                     if (completedText != null) {
                         StateControl.inputText = TextFieldValue(
@@ -105,6 +108,7 @@ fun InputComponent() {
                         "spy close" -> {
                             StateControl.session.showSpy = false
                             StateControl.session.spyLines = emptyList()
+                            StateControl.session.spyDirContent = emptyList()
                             StateControl.session.spyIndex = 0
                             StateControl.session.spyFileName = ""
                             StateControl.session.mode.value = ""
@@ -142,14 +146,27 @@ fun InputComponent() {
                             } else if (cmd.startsWith("spy ")) {
                                 val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
                                 val target = File(StateControl.session.currentDir, StateControl.prefix)
-                                if (target.exists() && supported.contains(target.extension.lowercase())) {
+
+                                if (target.exists() && target.isFile && supported.contains(target.extension.lowercase())) {
                                     StateControl.session.spyLines = extractTextLines(target)
                                     StateControl.session.spyIndex = 0
                                     StateControl.session.splitRatio.value = 0.3f
                                     StateControl.session.showSpy = true
                                     StateControl.session.showFileEditor = false
                                     StateControl.session.spyFileName = target.name
+                                    StateControl.session.spyDirContent = emptyList()
                                     StateControl.session.mode.value = "[spy mode]"
+                                } else if (target.exists() && target.isDirectory) {
+                                    StateControl.session.spyDirContent = listDirectory(target)
+                                    StateControl.session.spyIndex = 0
+                                    StateControl.session.splitRatio.value = 0.3f
+                                    StateControl.session.showSpy = true
+                                    StateControl.session.showFileEditor = false
+                                    StateControl.session.spyLines = emptyList()
+                                    StateControl.session.spyFileName = target.name
+                                    StateControl.session.mode.value = "[spy mode]"
+                                } else {
+                                    StateControl.session.mode.value = ""
                                 }
                             } else if (cmd.startsWith("file ")) {
                                 val parts = cmd.split(" ")
