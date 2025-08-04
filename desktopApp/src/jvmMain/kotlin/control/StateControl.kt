@@ -22,8 +22,9 @@ object StateControl {
     val currentDir: File
         get() = session.currentDir.value
 
+    // ✅ Agora acessa o .value da MutableState
     val output: List<File>
-        get() = session.output
+        get() = session.output.value
 
     val inputParts: List<String>
         get() = inputText.text.trim().split(" ")

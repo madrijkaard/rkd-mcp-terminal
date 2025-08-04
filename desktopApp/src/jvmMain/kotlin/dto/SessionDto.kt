@@ -7,7 +7,9 @@ import java.io.File
 
 data class SessionDto(
     var currentDir: MutableState<File> = mutableStateOf(File(System.getProperty("user.home"))),
-    var output: List<File> = listDirectory(File(System.getProperty("user.home"))),
+
+    // ✅ Agora reativo!
+    var output: MutableState<List<File>> = mutableStateOf(listDirectory(File(System.getProperty("user.home")))),
 
     // Modo de visualização (spy) para arquivos
     var showSpy: Boolean = false,

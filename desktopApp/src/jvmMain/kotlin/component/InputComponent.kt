@@ -36,7 +36,6 @@ fun InputComponent() {
             .background(Color.DarkGray)
             .padding(8.dp)
             .onPreviewKeyEvent { event ->
-                // AUTOCOMPLETE
                 if (event.key == Key.Tab && event.type == KeyEventType.KeyDown) {
                     val input = StateControl.inputText.text.trim()
                     val parts = input.split(" ")
@@ -56,7 +55,6 @@ fun InputComponent() {
                     return@onPreviewKeyEvent false
                 }
 
-                // ENTER
                 else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
                     val cmd = StateControl.inputText.text.trim()
                     when (cmd) {
@@ -76,23 +74,23 @@ fun InputComponent() {
                         }
 
                         "ls" -> {
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
                             resetVisualState()
+                            StateControl.session.output.value = listDirectory(StateControl.session.currentDir.value)
                         }
 
                         "cd .." -> {
+                            resetVisualState()
                             StateControl.session.currentDir.value.parentFile?.takeIf { it.exists() }?.let { parent ->
                                 StateControl.session.currentDir.value = parent
-                                StateControl.session.output = listDirectory(parent)
+                                StateControl.session.output.value = listDirectory(parent)
                             }
-                            resetVisualState()
                         }
 
                         "home" -> {
+                            resetVisualState()
                             val home = File(System.getProperty("user.home"))
                             StateControl.session.currentDir.value = home
-                            StateControl.session.output = listDirectory(home)
-                            resetVisualState()
+                            StateControl.session.output.value = listDirectory(home)
                         }
 
                         "spy n" -> {
@@ -108,29 +106,18 @@ fun InputComponent() {
                         }
 
                         "spy close" -> {
-                            StateControl.session.showSpy = false
-                            StateControl.session.spyLines = emptyList()
-                            StateControl.session.spyDirContent = emptyList()
-                            StateControl.session.spyIndex = 0
-                            StateControl.session.spyFileName = ""
-                            StateControl.session.mode.value = ""
+                            resetVisualState()
                         }
 
                         "file save" -> {
                             StateControl.session.fileEditorPath?.writeText(StateControl.session.fileEditorContent)
-                            StateControl.session.showFileEditor = false
-                            StateControl.session.fileEditorContent = ""
-                            StateControl.session.fileEditorPath = null
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
-                            StateControl.session.mode.value = ""
+                            resetVisualState()
+                            StateControl.session.output.value = listDirectory(StateControl.session.currentDir.value)
                         }
 
                         "file close" -> {
-                            StateControl.session.showFileEditor = false
-                            StateControl.session.fileEditorContent = ""
-                            StateControl.session.fileEditorPath = null
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
-                            StateControl.session.mode.value = ""
+                            resetVisualState()
+                            StateControl.session.output.value = listDirectory(StateControl.session.currentDir.value)
                         }
 
                         "exit" -> {
@@ -140,12 +127,12 @@ fun InputComponent() {
                         else -> {
                             when {
                                 cmd.startsWith("cd ") -> {
+                                    resetVisualState()
                                     val target = File(StateControl.session.currentDir.value, StateControl.prefix)
                                     if (target.exists() && target.isDirectory) {
                                         StateControl.session.currentDir.value = target
-                                        StateControl.session.output = listDirectory(target)
+                                        StateControl.session.output.value = listDirectory(target)
                                     }
-                                    resetVisualState()
                                 }
 
                                 cmd.startsWith("spy ") -> {
@@ -153,25 +140,23 @@ fun InputComponent() {
                                     val target = File(StateControl.session.currentDir.value, StateControl.prefix)
 
                                     if (target.exists() && target.isFile && supported.contains(target.extension.lowercase())) {
+                                        resetVisualState()
                                         StateControl.session.spyLines = extractTextLines(target)
                                         StateControl.session.spyIndex = 0
                                         StateControl.session.splitRatio.value = 0.3f
                                         StateControl.session.showSpy = true
-                                        StateControl.session.showFileEditor = false
                                         StateControl.session.spyFileName = target.name
-                                        StateControl.session.spyDirContent = emptyList()
                                         StateControl.session.mode.value = "[spy mode]"
                                     } else if (target.exists() && target.isDirectory) {
+                                        resetVisualState()
                                         StateControl.session.spyDirContent = listDirectory(target)
                                         StateControl.session.spyIndex = 0
                                         StateControl.session.splitRatio.value = 0.3f
                                         StateControl.session.showSpy = true
-                                        StateControl.session.showFileEditor = false
-                                        StateControl.session.spyLines = emptyList()
                                         StateControl.session.spyFileName = target.name
                                         StateControl.session.mode.value = "[spy mode]"
                                     } else {
-                                        StateControl.session.mode.value = ""
+                                        resetVisualState()
                                     }
                                 }
 
@@ -182,16 +167,17 @@ fun InputComponent() {
                                         if (file.extension.lowercase() == "pdf") return@onPreviewKeyEvent true
                                         val exists = file.exists()
                                         if (!exists) file.createNewFile()
+                                        resetVisualState()
                                         StateControl.session.fileEditorPath = file
                                         StateControl.session.fileEditorContent = if (exists) file.readText() else ""
                                         StateControl.session.splitRatio.value = 0.3f
                                         StateControl.session.showFileEditor = true
-                                        StateControl.session.showSpy = false
                                         StateControl.session.mode.value = "[file mode]"
                                     }
                                 }
 
                                 cmd.startsWith("mk ") -> {
+                                    resetVisualState()
                                     val expression = cmd.removePrefix("mk ").trim()
                                     val parts = expression.split("->", ";")
                                     val currentDir = StateControl.session.currentDir.value
@@ -218,12 +204,11 @@ fun InputComponent() {
                                         File(currentDir, dirName).mkdirs()
                                     }
 
-                                    StateControl.session.output = listDirectory(currentDir)
-                                    resetVisualState()
+                                    StateControl.session.output.value = listDirectory(currentDir)
                                 }
 
                                 else -> {
-                                    StateControl.session.mode.value = ""
+                                    resetVisualState()
                                 }
                             }
                         }

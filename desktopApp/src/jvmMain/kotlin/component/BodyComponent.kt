@@ -26,17 +26,18 @@ import control.StateControl
 @Composable
 fun BodyComponent() {
     Row(modifier = Modifier.fillMaxSize()) {
+
+        // Painel esquerdo: lista de arquivos/diretórios
         Box(
             modifier = Modifier
                 .weight(StateControl.session.splitRatio.value)
                 .verticalScroll(rememberScrollState())
         ) {
             Column {
-                StateControl.session.output.forEach { file ->
+                StateControl.output.forEach { file ->  // ✅ usa a versão reativa
                     val name = file.name
                     val nameLower = name.lowercase()
                     val prefix = StateControl.prefix
-
                     val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
 
                     val annotated = when {
@@ -90,6 +91,7 @@ fun BodyComponent() {
             }
         }
 
+        // Divisor + painel direito (spy ou editor)
         if (StateControl.session.showSpy || StateControl.session.showFileEditor) {
             Box(
                 Modifier
@@ -123,41 +125,45 @@ fun BodyComponent() {
                             .border(1.dp, Color.Green)
                             .verticalScroll(scrollState)
                     ) {
-                        if (StateControl.session.spyLines.isNotEmpty()) {
-                            // Caso spy seja de arquivo
-                            Column {
-                                StateControl.session.spyLines
-                                    .drop(StateControl.session.spyIndex)
-                                    .take(100)
-                                    .forEach {
+                        when {
+                            StateControl.session.spyLines.isNotEmpty() -> {
+                                Column {
+                                    StateControl.session.spyLines
+                                        .drop(StateControl.session.spyIndex)
+                                        .take(100)
+                                        .forEach {
+                                            Text(
+                                                text = it,
+                                                color = Color.Green,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                }
+                            }
+
+                            StateControl.session.spyDirContent.isNotEmpty() -> {
+                                Column {
+                                    StateControl.session.spyDirContent.forEach { file ->
+                                        val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
                                         Text(
-                                            text = it,
+                                            text = "$icon ${file.name}",
                                             color = Color.Green,
                                             fontFamily = FontFamily.Monospace,
                                             fontSize = 13.sp
                                         )
                                     }
-                            }
-                        } else if (StateControl.session.spyDirContent.isNotEmpty()) {
-                            // Caso spy seja de diretório
-                            Column {
-                                StateControl.session.spyDirContent.forEach { file ->
-                                    val icon = if (file.isDirectory) "\uD83D\uDCC1" else "\uD83D\uDCC4"
-                                    Text(
-                                        text = "$icon ${file.name}",
-                                        color = Color.Green,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 13.sp
-                                    )
                                 }
                             }
-                        } else {
-                            Text(
-                                text = "Nenhum conteúdo para exibir.",
-                                color = Color.DarkGray,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 13.sp
-                            )
+
+                            else -> {
+                                Text(
+                                    text = "Nenhum conteúdo para exibir.",
+                                    color = Color.DarkGray,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
                 } else if (StateControl.session.showFileEditor) {
