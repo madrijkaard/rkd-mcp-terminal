@@ -19,6 +19,7 @@ import dto.SessionDto
 import util.extractTextLines
 import util.listDirectory
 import java.io.File
+import kotlin.system.exitProcess
 
 @Composable
 fun InputComponent() {
@@ -51,7 +52,6 @@ fun InputComponent() {
                     }
 
                     if (completedText != null) {
-                        // Posiciona o cursor no final do texto autocompletado
                         StateControl.inputText = TextFieldValue(
                             text = completedText,
                             selection = TextRange(completedText.length)
@@ -102,7 +102,7 @@ fun InputComponent() {
                             }
                         }
 
-                        "spy exit" -> {
+                        "spy close" -> {
                             StateControl.session.showSpy = false
                             StateControl.session.spyLines = emptyList()
                             StateControl.session.spyIndex = 0
@@ -119,12 +119,16 @@ fun InputComponent() {
                             StateControl.session.mode.value = ""
                         }
 
-                        "file cancel" -> {
+                        "file close" -> {
                             StateControl.session.showFileEditor = false
                             StateControl.session.fileEditorContent = ""
                             StateControl.session.fileEditorPath = null
                             StateControl.session.output = listDirectory(StateControl.session.currentDir)
                             StateControl.session.mode.value = ""
+                        }
+
+                        "exit" -> {
+                            exitProcess(0)
                         }
 
                         else -> {
@@ -167,7 +171,6 @@ fun InputComponent() {
                         }
                     }
 
-                    // Limpa o campo de entrada
                     StateControl.inputText = TextFieldValue("")
                     true
                 } else false
