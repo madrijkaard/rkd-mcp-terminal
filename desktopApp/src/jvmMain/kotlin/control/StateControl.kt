@@ -20,7 +20,7 @@ object StateControl {
         get() = sessions[selectedTabIndex]
 
     val currentDir: File
-        get() = session.currentDir
+        get() = session.currentDir.value
 
     val output: List<File>
         get() = session.output
@@ -46,7 +46,7 @@ object StateControl {
     val matchedFile: List<File>
         get() = output.filter { it.isFile && it.name.lowercase().startsWith(prefix) }
 
-    // NOVO: junta arquivos e diretórios compatíveis
+    // Junta arquivos e diretórios compatíveis
     val matchedAll: List<File>
         get() = output.filter { it.name.lowercase().startsWith(prefix) }
 

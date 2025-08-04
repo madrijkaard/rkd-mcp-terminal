@@ -16,6 +16,7 @@ import control.StateControl
 fun SubHeaderComponent() {
     val session = StateControl.session
     val modeLabel = session.mode.value
+    val currentPath = session.currentDir.value.absolutePath // ✅ torna-se reativo
 
     Box(
         modifier = Modifier
@@ -29,7 +30,7 @@ fun SubHeaderComponent() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = session.currentDir.absolutePath,
+                text = currentPath, // ✅ reativo
                 fontSize = 14.sp,
                 fontFamily = FontFamily.Monospace,
                 color = Color.Green,

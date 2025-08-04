@@ -43,7 +43,6 @@ fun InputComponent() {
                     if (parts.size == 2) {
                         val command = parts[0]
                         val matches = StateControl.matchedAll
-
                         if (matches.size == 1) {
                             val match = matches[0]
                             val completedText = "$command ${match.name}"
@@ -77,21 +76,22 @@ fun InputComponent() {
                         }
 
                         "ls" -> {
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
                             resetVisualState()
                         }
 
                         "cd .." -> {
-                            StateControl.session.currentDir.parentFile?.takeIf { it.exists() }?.let {
-                                StateControl.session.currentDir = it
-                                StateControl.session.output = listDirectory(it)
+                            StateControl.session.currentDir.value.parentFile?.takeIf { it.exists() }?.let { parent ->
+                                StateControl.session.currentDir.value = parent
+                                StateControl.session.output = listDirectory(parent)
                             }
                             resetVisualState()
                         }
 
                         "home" -> {
-                            StateControl.session.currentDir = File(System.getProperty("user.home"))
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            val home = File(System.getProperty("user.home"))
+                            StateControl.session.currentDir.value = home
+                            StateControl.session.output = listDirectory(home)
                             resetVisualState()
                         }
 
@@ -121,7 +121,7 @@ fun InputComponent() {
                             StateControl.session.showFileEditor = false
                             StateControl.session.fileEditorContent = ""
                             StateControl.session.fileEditorPath = null
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
                             StateControl.session.mode.value = ""
                         }
 
@@ -129,7 +129,7 @@ fun InputComponent() {
                             StateControl.session.showFileEditor = false
                             StateControl.session.fileEditorContent = ""
                             StateControl.session.fileEditorPath = null
-                            StateControl.session.output = listDirectory(StateControl.session.currentDir)
+                            StateControl.session.output = listDirectory(StateControl.session.currentDir.value)
                             StateControl.session.mode.value = ""
                         }
 
@@ -138,54 +138,93 @@ fun InputComponent() {
                         }
 
                         else -> {
-                            if (cmd.startsWith("cd ")) {
-                                val target = File(StateControl.session.currentDir, StateControl.prefix)
-                                if (target.exists() && target.isDirectory) {
-                                    StateControl.session.currentDir = target
-                                    StateControl.session.output = listDirectory(target)
+                            when {
+                                cmd.startsWith("cd ") -> {
+                                    val target = File(StateControl.session.currentDir.value, StateControl.prefix)
+                                    if (target.exists() && target.isDirectory) {
+                                        StateControl.session.currentDir.value = target
+                                        StateControl.session.output = listDirectory(target)
+                                    }
+                                    resetVisualState()
                                 }
-                                resetVisualState()
-                            } else if (cmd.startsWith("spy ")) {
-                                val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
-                                val target = File(StateControl.session.currentDir, StateControl.prefix)
 
-                                if (target.exists() && target.isFile && supported.contains(target.extension.lowercase())) {
-                                    StateControl.session.spyLines = extractTextLines(target)
-                                    StateControl.session.spyIndex = 0
-                                    StateControl.session.splitRatio.value = 0.3f
-                                    StateControl.session.showSpy = true
-                                    StateControl.session.showFileEditor = false
-                                    StateControl.session.spyFileName = target.name
-                                    StateControl.session.spyDirContent = emptyList()
-                                    StateControl.session.mode.value = "[spy mode]"
-                                } else if (target.exists() && target.isDirectory) {
-                                    StateControl.session.spyDirContent = listDirectory(target)
-                                    StateControl.session.spyIndex = 0
-                                    StateControl.session.splitRatio.value = 0.3f
-                                    StateControl.session.showSpy = true
-                                    StateControl.session.showFileEditor = false
-                                    StateControl.session.spyLines = emptyList()
-                                    StateControl.session.spyFileName = target.name
-                                    StateControl.session.mode.value = "[spy mode]"
-                                } else {
+                                cmd.startsWith("spy ") -> {
+                                    val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
+                                    val target = File(StateControl.session.currentDir.value, StateControl.prefix)
+
+                                    if (target.exists() && target.isFile && supported.contains(target.extension.lowercase())) {
+                                        StateControl.session.spyLines = extractTextLines(target)
+                                        StateControl.session.spyIndex = 0
+                                        StateControl.session.splitRatio.value = 0.3f
+                                        StateControl.session.showSpy = true
+                                        StateControl.session.showFileEditor = false
+                                        StateControl.session.spyFileName = target.name
+                                        StateControl.session.spyDirContent = emptyList()
+                                        StateControl.session.mode.value = "[spy mode]"
+                                    } else if (target.exists() && target.isDirectory) {
+                                        StateControl.session.spyDirContent = listDirectory(target)
+                                        StateControl.session.spyIndex = 0
+                                        StateControl.session.splitRatio.value = 0.3f
+                                        StateControl.session.showSpy = true
+                                        StateControl.session.showFileEditor = false
+                                        StateControl.session.spyLines = emptyList()
+                                        StateControl.session.spyFileName = target.name
+                                        StateControl.session.mode.value = "[spy mode]"
+                                    } else {
+                                        StateControl.session.mode.value = ""
+                                    }
+                                }
+
+                                cmd.startsWith("file ") -> {
+                                    val parts = cmd.split(" ")
+                                    if (parts.size == 2) {
+                                        val file = File(StateControl.session.currentDir.value, parts[1])
+                                        if (file.extension.lowercase() == "pdf") return@onPreviewKeyEvent true
+                                        val exists = file.exists()
+                                        if (!exists) file.createNewFile()
+                                        StateControl.session.fileEditorPath = file
+                                        StateControl.session.fileEditorContent = if (exists) file.readText() else ""
+                                        StateControl.session.splitRatio.value = 0.3f
+                                        StateControl.session.showFileEditor = true
+                                        StateControl.session.showSpy = false
+                                        StateControl.session.mode.value = "[file mode]"
+                                    }
+                                }
+
+                                cmd.startsWith("mk ") -> {
+                                    val expression = cmd.removePrefix("mk ").trim()
+                                    val parts = expression.split("->", ";")
+                                    val currentDir = StateControl.session.currentDir.value
+
+                                    val mainDirs = parts.getOrNull(0)?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                                    val subDirs = parts.getOrNull(1)?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                                    val finalDirs = parts.getOrNull(2)?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+
+                                    var lastMainDir: File? = null
+
+                                    for (dirName in mainDirs) {
+                                        val dir = File(currentDir, dirName)
+                                        dir.mkdirs()
+                                        lastMainDir = dir
+                                    }
+
+                                    for (dirName in subDirs) {
+                                        lastMainDir?.let {
+                                            File(it, dirName).mkdirs()
+                                        }
+                                    }
+
+                                    for (dirName in finalDirs) {
+                                        File(currentDir, dirName).mkdirs()
+                                    }
+
+                                    StateControl.session.output = listDirectory(currentDir)
+                                    resetVisualState()
+                                }
+
+                                else -> {
                                     StateControl.session.mode.value = ""
                                 }
-                            } else if (cmd.startsWith("file ")) {
-                                val parts = cmd.split(" ")
-                                if (parts.size == 2) {
-                                    val file = File(StateControl.session.currentDir, parts[1])
-                                    if (file.extension.lowercase() == "pdf") return@onPreviewKeyEvent true
-                                    val exists = file.exists()
-                                    if (!exists) file.createNewFile()
-                                    StateControl.session.fileEditorPath = file
-                                    StateControl.session.fileEditorContent = if (exists) file.readText() else ""
-                                    StateControl.session.splitRatio.value = 0.3f
-                                    StateControl.session.showFileEditor = true
-                                    StateControl.session.showSpy = false
-                                    StateControl.session.mode.value = "[file mode]"
-                                }
-                            } else {
-                                StateControl.session.mode.value = ""
                             }
                         }
                     }
