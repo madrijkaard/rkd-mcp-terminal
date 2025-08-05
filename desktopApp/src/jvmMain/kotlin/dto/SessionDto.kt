@@ -22,7 +22,7 @@ data class SessionDto(
 
     // Editor de arquivos
     var showFileEditor: Boolean = false,
-    var fileEditorContent: String = "",
+    var fileEditorContent: MutableState<String> = mutableStateOf(""), // ✅ Corrigido aqui
     var fileEditorPath: File? = null,
 
     // Layout

@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import control.AppScreen
 import control.StateControl
 import dto.SessionDto
 import util.extractTextLines
@@ -110,7 +111,7 @@ fun InputComponent() {
                         }
 
                         "file save" -> {
-                            StateControl.session.fileEditorPath?.writeText(StateControl.session.fileEditorContent)
+                            StateControl.session.fileEditorPath?.writeText(StateControl.session.fileEditorContent.value)
                             resetVisualState()
                             StateControl.session.output.value = listDirectory(StateControl.session.currentDir.value)
                         }
@@ -122,6 +123,10 @@ fun InputComponent() {
 
                         "exit" -> {
                             exitProcess(0)
+                        }
+
+                        "menu" -> {
+                            StateControl.currentScreen = AppScreen.MENU
                         }
 
                         else -> {
@@ -169,7 +174,7 @@ fun InputComponent() {
                                         if (!exists) file.createNewFile()
                                         resetVisualState()
                                         StateControl.session.fileEditorPath = file
-                                        StateControl.session.fileEditorContent = if (exists) file.readText() else ""
+                                        StateControl.session.fileEditorContent.value = if (exists) file.readText() else ""
                                         StateControl.session.splitRatio.value = 0.3f
                                         StateControl.session.showFileEditor = true
                                         StateControl.session.mode.value = "[file mode]"
@@ -230,7 +235,7 @@ private fun resetVisualState() {
     StateControl.session.spyIndex = 0
     StateControl.session.spyFileName = ""
     StateControl.session.showFileEditor = false
-    StateControl.session.fileEditorContent = ""
+    StateControl.session.fileEditorContent.value = "" // ✅ usa .value agora
     StateControl.session.fileEditorPath = null
     StateControl.session.mode.value = ""
 }

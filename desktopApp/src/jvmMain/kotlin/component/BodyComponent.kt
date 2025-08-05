@@ -5,12 +5,11 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
@@ -22,19 +21,21 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import control.StateControl
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 
 @Composable
 fun BodyComponent() {
     Row(modifier = Modifier.fillMaxSize()) {
 
-        // Painel esquerdo: lista de arquivos/diretórios
+        // Painel esquerdo
         Box(
             modifier = Modifier
                 .weight(StateControl.session.splitRatio.value)
                 .verticalScroll(rememberScrollState())
         ) {
             Column {
-                StateControl.output.forEach { file ->  // ✅ usa a versão reativa
+                StateControl.output.forEach { file ->
                     val name = file.name
                     val nameLower = name.lowercase()
                     val prefix = StateControl.prefix
@@ -91,8 +92,10 @@ fun BodyComponent() {
             }
         }
 
-        // Divisor + painel direito (spy ou editor)
+        // Divisor e painel direito
         if (StateControl.session.showSpy || StateControl.session.showFileEditor) {
+
+            // Divisor arrastável
             Box(
                 Modifier
                     .fillMaxHeight()
@@ -109,6 +112,7 @@ fun BodyComponent() {
                     .background(Color.Green)
             )
 
+            // Painel direito
             Box(
                 Modifier
                     .weight(1f - StateControl.session.splitRatio.value)
@@ -166,11 +170,16 @@ fun BodyComponent() {
                             }
                         }
                     }
-                } else if (StateControl.session.showFileEditor) {
+                }
+
+                // Editor de arquivos
+                else if (StateControl.session.showFileEditor) {
                     val scrollState = rememberScrollState()
                     val focusRequester = remember { FocusRequester() }
 
                     LaunchedEffect(Unit) {
+                        yield()
+                        delay(100)
                         focusRequester.requestFocus()
                     }
 
@@ -181,15 +190,15 @@ fun BodyComponent() {
                             .padding(8.dp)
                             .border(1.dp, Color.Green)
                             .verticalScroll(scrollState)
-                            .focusable()
-                            .clickable { focusRequester.requestFocus() }
                     ) {
                         BasicTextField(
-                            value = StateControl.session.fileEditorContent,
-                            onValueChange = { StateControl.session.fileEditorContent = it },
+                            value = StateControl.session.fileEditorContent.value,
+                            onValueChange = { StateControl.session.fileEditorContent.value = it },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
+                                .fillMaxSize()
+                                .focusRequester(focusRequester)
+                                .focusTarget()
+                                .clickable {},
                             textStyle = TextStyle(
                                 color = Color.Green,
                                 fontFamily = FontFamily.Monospace,

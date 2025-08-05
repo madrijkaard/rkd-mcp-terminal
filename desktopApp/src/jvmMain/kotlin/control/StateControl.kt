@@ -5,7 +5,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import dto.SessionDto
 import java.io.File
 
+// ✅ NOVO: Tela atual da aplicação
+enum class AppScreen {
+    MENU, FILE_SYSTEM
+}
+
 object StateControl {
+
+    // ✅ NOVO: Começa no menu
+    var currentScreen by mutableStateOf(AppScreen.MENU)
 
     // Agora usamos TextFieldValue no lugar de String
     var inputText by mutableStateOf(TextFieldValue(""))
