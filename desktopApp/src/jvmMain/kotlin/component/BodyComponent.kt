@@ -27,15 +27,15 @@ import kotlinx.coroutines.yield
 @Composable
 fun BodyComponent() {
     Row(modifier = Modifier.fillMaxSize()) {
-
-        // Painel esquerdo
         Box(
             modifier = Modifier
                 .weight(StateControl.session.splitRatio.value)
                 .verticalScroll(rememberScrollState())
         ) {
             Column {
+
                 StateControl.output.forEach { file ->
+
                     val name = file.name
                     val nameLower = name.lowercase()
                     val prefix = StateControl.prefix
@@ -92,10 +92,7 @@ fun BodyComponent() {
             }
         }
 
-        // Divisor e painel direito
         if (StateControl.session.showSpy || StateControl.session.showFileEditor) {
-
-            // Divisor arrastável
             Box(
                 Modifier
                     .fillMaxHeight()
@@ -112,13 +109,13 @@ fun BodyComponent() {
                     .background(Color.Green)
             )
 
-            // Painel direito
             Box(
                 Modifier
                     .weight(1f - StateControl.session.splitRatio.value)
                     .padding(start = 8.dp)
             ) {
                 if (StateControl.session.showSpy) {
+
                     val scrollState = rememberScrollState()
 
                     Box(
@@ -172,8 +169,8 @@ fun BodyComponent() {
                     }
                 }
 
-                // Editor de arquivos
                 else if (StateControl.session.showFileEditor) {
+
                     val scrollState = rememberScrollState()
                     val focusRequester = remember { FocusRequester() }
 

@@ -24,6 +24,7 @@ import kotlin.system.exitProcess
 
 @Composable
 fun InputComponent() {
+
     BasicTextField(
         value = StateControl.inputText,
         onValueChange = { StateControl.inputText = it },
@@ -227,7 +228,6 @@ fun InputComponent() {
     )
 }
 
-// 🔁 Função auxiliar para limpar visualizações laterais
 private fun resetVisualState() {
     StateControl.session.showSpy = false
     StateControl.session.spyLines = emptyList()
@@ -235,7 +235,7 @@ private fun resetVisualState() {
     StateControl.session.spyIndex = 0
     StateControl.session.spyFileName = ""
     StateControl.session.showFileEditor = false
-    StateControl.session.fileEditorContent.value = "" // ✅ usa .value agora
+    StateControl.session.fileEditorContent.value = ""
     StateControl.session.fileEditorPath = null
     StateControl.session.mode.value = ""
 }
