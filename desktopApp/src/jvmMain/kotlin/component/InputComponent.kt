@@ -142,7 +142,7 @@ fun InputComponent() {
                                 }
 
                                 cmd.startsWith("spy ") -> {
-                                    val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh")
+                                    val supported = listOf("pdf", "txt", "json", "xml", "java", "log", "md", "py", "yml", "yaml", "sh", "md")
                                     val target = File(StateControl.session.currentDir.value, StateControl.prefix)
 
                                     if (target.exists() && target.isFile && supported.contains(target.extension.lowercase())) {

@@ -57,11 +57,7 @@ private fun extractPdfWithImageMarkers(file: File): List<String> {
 
         for (pageIndex in 0 until document.numberOfPages) {
             val page = document.getPage(pageIndex)
-
-            // Detecta imagens
             imageDetector.processPage(page)
-
-            // Extrai texto da página
             stripper.startPage = pageIndex + 1
             stripper.endPage = pageIndex + 1
             stripper.getText(document)
