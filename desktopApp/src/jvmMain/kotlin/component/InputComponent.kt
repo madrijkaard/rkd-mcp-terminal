@@ -93,6 +93,7 @@ fun InputComponent() {
                             val home = File(System.getProperty("user.home"))
                             StateControl.session.currentDir.value = home
                             StateControl.session.output.value = listDirectory(home)
+                            StateControl.currentScreen = AppScreen.FILE_SYSTEM
                         }
 
                         "spy n" -> {
@@ -124,10 +125,6 @@ fun InputComponent() {
 
                         "exit" -> {
                             exitProcess(0)
-                        }
-
-                        "menu" -> {
-                            StateControl.currentScreen = AppScreen.MENU
                         }
 
                         else -> {

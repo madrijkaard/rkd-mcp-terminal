@@ -5,17 +5,14 @@ import androidx.compose.ui.text.input.TextFieldValue
 import dto.SessionDto
 import java.io.File
 
-// ✅ NOVO: Tela atual da aplicação
 enum class AppScreen {
-    MENU, FILE_SYSTEM
+    FILE_SYSTEM
 }
 
 object StateControl {
 
-    // ✅ NOVO: Começa no menu
-    var currentScreen by mutableStateOf(AppScreen.MENU)
+    var currentScreen by mutableStateOf(AppScreen.FILE_SYSTEM)
 
-    // Agora usamos TextFieldValue no lugar de String
     var inputText by mutableStateOf(TextFieldValue(""))
 
     val sessions = mutableStateListOf(SessionDto())
@@ -30,7 +27,6 @@ object StateControl {
     val currentDir: File
         get() = session.currentDir.value
 
-    // ✅ Agora acessa o .value da MutableState
     val output: List<File>
         get() = session.output.value
 
@@ -55,15 +51,6 @@ object StateControl {
     val matchedFile: List<File>
         get() = output.filter { it.isFile && it.name.lowercase().startsWith(prefix) }
 
-    // Junta arquivos e diretórios compatíveis
     val matchedAll: List<File>
         get() = output.filter { it.name.lowercase().startsWith(prefix) }
-
-    init {
-        println("BillPughSingleton instanciado")
-    }
-
-    fun doSomething() {
-        println("Executando lógica do singleton")
-    }
 }
