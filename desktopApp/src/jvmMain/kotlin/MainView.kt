@@ -1,38 +1,25 @@
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import component.*
+import composite.VerticalComposite
 import control.AppScreen
 import control.StateControl
-import decorator.*
 
 @Composable
 fun MainView() {
     when (StateControl.currentScreen) {
-
         AppScreen.FILE_SYSTEM -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
-                headerDecorator {
-                }
-
-                subHeaderDecorator {
-                    Column(modifier = Modifier.weight(1f)) {
-                        bodyDecorator {
-                        }
-                    }
-                }
-
-                inputDecorator {
-                    settingsDecorator {
-                    }
-                }
-            }
+            val rootComposite = VerticalComposite()
+            val header = HeaderComponent()
+            rootComposite.add(header)
+            val subHeader = SubHeaderComponent()
+            rootComposite.add(subHeader)
+            val body = BodyComponent()
+            rootComposite.addWithWeight(body, weightRatio = 1f)
+            val input = InputComponent()
+            rootComposite.add(input)
+            val settings = SettingComponent()
+            rootComposite.add(settings)
+            rootComposite.Render()
         }
     }
 }
