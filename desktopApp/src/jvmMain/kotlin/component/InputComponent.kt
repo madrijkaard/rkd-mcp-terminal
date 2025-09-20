@@ -60,8 +60,7 @@ class InputComponent : UiComponent {
                     }
 
                     else if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
-                        val cmd = StateControl.inputText.text.trim()
-                        when (cmd) {
+                        when (val cmd = StateControl.inputText.text.trim()) {
                             "new tab" -> {
                                 StateControl.sessions.add(SessionDto())
                                 StateControl.selectedTabIndex = StateControl.sessions.lastIndex

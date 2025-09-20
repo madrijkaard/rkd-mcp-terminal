@@ -49,7 +49,7 @@ class BodyComponent : UiComponent {
                                 buildAnnotatedString {
                                     append("$icon ")
                                     withStyle(SpanStyle(color = Color.White)) {
-                                        append(name.substring(0, prefix.length))
+                                        append(name.take(prefix.length))
                                     }
                                     withStyle(SpanStyle(color = Color.Green)) {
                                         append(name.substring(prefix.length))
